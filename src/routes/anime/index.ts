@@ -1,61 +1,51 @@
-import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { PROVIDERS_LIST } from '@consumet/extensions';
+import { FastifyInstance } from 'fastify';
+import { ANIME } from '@consumet/extensions';
 
-import gogoanime from './gogoanime';
-import animepahe from './animepahe';
-import zoro from './zoro';
-import nineanime from './9anime';
-import animefox from './animefox';
-import anify from './anify';
-import crunchyroll from './crunchyroll';
-import bilibili from './bilibili';
-import marin from './marin';
+const gogoanime = new ANIME.Gogoanime();
 
-const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-  await fastify.register(gogoanime, { prefix: '/gogoanime' });
-  await fastify.register(animepahe, { prefix: '/animepahe' });
-  await fastify.register(zoro, { prefix: '/zoro' });
-  await fastify.register(nineanime, { prefix: '/9anime' });
-  await fastify.register(animefox, { prefix: '/animefox' });
-  await fastify.register(anify, { prefix: '/anify' });
-  await fastify.register(crunchyroll, { prefix: '/crunchyroll' });
-  await fastify.register(bilibili, { prefix: '/bilibili' });
-  await fastify.register(marin, { prefix: '/marin' });
-
-  fastify.get('/', async (request: any, reply: any) => {
-    reply.status(200).send('Welcome to Consumet Anime 🗾');
-  });
-
-  fastify.get('/:animeProvider', async (request: FastifyRequest, reply: FastifyReply) => {
-    const queries: { animeProvider: string; page: number } = {
-      animeProvider: '',
-      page: 1,
-    };
-
-    queries.animeProvider = decodeURIComponent(
-      (request.params as { animeProvider: string; page: number }).animeProvider,
-    );
-
-    queries.page = (request.query as { animeProvider: string; page: number }).page;
-
-    if (queries.page! < 1) queries.page = 1;
-
-    const provider = PROVIDERS_LIST.ANIME.find(
-      (provider: any) => provider.toString.name === queries.animeProvider,
-    );
-
+export default async function (fastify: FastifyInstance) {
+  // Get top airing anime
+  fastify.get('/gogoanime/top-airing', async (request, reply) => {
     try {
-      if (provider) {
-        reply.redirect(`/anime/${provider.toString.name}`);
-      } else {
-        reply
-          .status(404)
-          .send({ message: 'Provider not found, please check the providers list.' });
-      }
+      const page = request.query.page ? Number(request.query.page) : 1;
+      const data = await gogoanime.fetchTopAiring(page);
+      reply.send(data);
     } catch (err) {
-      reply.status(500).send('Something went wrong. Please try again later.');
+      reply.status(500).send({ message: 'Something went wrong' });
     }
   });
-};
 
-export default routes;
+  // Search for anime
+  fastify.get('/gogoanime/search/:query', async (request, reply) => {
+    try {
+      const { query } = request.params;
+      const page = request.query.page ? Number(request.query.page) : 1;
+      const data = await gogoanime.search(query, page);
+      reply.send(data);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong' });
+    }
+  });
+
+  // Get anime info
+  fastify.get('/gogoanime/info/:id', async (request, reply) => {
+    try {
+      const { id } = request.params;
+      const data = await gogoanime.fetchAnimeInfo(id);
+      reply.send(data);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong' });
+    }
+  });
+
+  // Get streaming links
+  fastify.get('/gogoanime/watch/:episodeId', async (request, reply) => {
+    try {
+      const { episodeId } = request.params;
+      const data = await gogoanime.fetchEpisodeSources(episodeId);
+      reply.send(data);
+    } catch (err) {
+      reply.status(500).send({ message: 'Something went wrong' });
+    }
+  });
+}

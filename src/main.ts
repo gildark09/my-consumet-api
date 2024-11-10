@@ -4,12 +4,11 @@ import cors from '@fastify/cors';
 import anime from './routes/anime';
 
 const app = Fastify({ 
-  logger: true,
-  trustProxy: true
+  logger: true
 });
 
 const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = '0.0.0.0';
 
 // Register CORS
 app.register(cors, {

@@ -16,6 +16,8 @@ declare module 'fastify' {
   
   export interface FastifyServerOptions {
     logger?: boolean | object;
+    ignoreTrailingSlash?: boolean;
+    connectionTimeout?: number;
   }
   
   export interface FastifyInstance {
